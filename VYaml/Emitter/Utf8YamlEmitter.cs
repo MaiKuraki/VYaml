@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Buffers.Text;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using VYaml.Internal;
 
@@ -22,7 +21,7 @@ namespace VYaml.Emitter
 
     public ref struct Utf8YamlEmitter
     {
-        static byte[] whiteSpaces = "                                "u8.ToArray();
+        static byte[] whiteSpaces = InitWhiteSpaces(128);
         static readonly byte[] FlowSequenceEmpty = "[]"u8.ToArray();
         static readonly byte[] FlowSequenceEmptyWithSpace = " []"u8.ToArray();
         static readonly byte[] FlowSequenceSeparator = ", "u8.ToArray();
@@ -30,6 +29,13 @@ namespace VYaml.Emitter
         static readonly byte[] FlowMappingFooter = " }"u8.ToArray();
         static readonly byte[] FlowMappingEmpty = "{}"u8.ToArray();
         static readonly byte[] FlowMappingEmptyWithSpace = " {}"u8.ToArray();
+
+        static byte[] InitWhiteSpaces(int size)
+        {
+            var arr = new byte[size];
+            for (var i = 0; i < size; i++) arr[i] = YamlCodes.Space;
+            return arr;
+        }
 
         [ThreadStatic]
         static ExpandBuffer<char>? stringBufferStatic;

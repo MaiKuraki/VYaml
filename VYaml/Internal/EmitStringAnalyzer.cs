@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using VYaml.Emitter;
@@ -34,13 +33,14 @@ namespace VYaml.Internal
         [ThreadStatic]
         static StringBuilder? stringBuilderThreadStatic;
 
-        static char[] whiteSpaces =
+        static char[] whiteSpaces = InitWhiteSpaces(128);
+
+        static char[] InitWhiteSpaces(int size)
         {
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-            ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-        };
+            var arr = new char[size];
+            for (var i = 0; i < size; i++) arr[i] = ' ';
+            return arr;
+        }
 
         public static EmitStringInfo Analyze(ReadOnlySpan<char> value)
         {
