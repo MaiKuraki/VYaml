@@ -757,7 +757,16 @@ namespace VYaml.Emitter
 
             if (length > whiteSpaces.Length)
             {
-                whiteSpaces = Enumerable.Repeat(YamlCodes.Space, length * 2).ToArray();
+                var newSize = whiteSpaces.Length;
+                while (newSize < length)
+                {
+                    newSize *= 2;
+                }
+                whiteSpaces = new byte[newSize];
+                for (var i = 0; i < newSize; i++)
+                {
+                    whiteSpaces[i] = YamlCodes.Space;
+                }
             }
             whiteSpaces.AsSpan(0, length).CopyTo(output[offset..]);
             offset += length;

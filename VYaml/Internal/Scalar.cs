@@ -56,12 +56,12 @@ namespace VYaml.Parser
 
         public Scalar(int capacity)
         {
-            buffer = new byte[capacity];
+            buffer = capacity > 0 ? ArrayPool<byte>.Shared.Rent(capacity) : Array.Empty<byte>();
         }
 
         public Scalar(ReadOnlySpan<byte> content)
         {
-            buffer = new byte[content.Length];
+            buffer = content.Length > 0 ? ArrayPool<byte>.Shared.Rent(content.Length) : Array.Empty<byte>();
             Write(content);
         }
 
@@ -582,11 +582,19 @@ namespace VYaml.Parser
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void SetCapacity(int newCapacity)
         {
+            const int MaxCapacity = 256 * 1024 * 1024; // 256 MB safety limit
+            if (newCapacity > MaxCapacity)
+            {
+                throw new InvalidOperationException($"Scalar capacity {newCapacity} exceeds maximum allowed size of {MaxCapacity} bytes.");
+            }
             if (buffer.Length >= newCapacity) return;
 
             var newBuffer = ArrayPool<byte>.Shared.Rent(newCapacity);
             Array.Copy(buffer, 0, newBuffer, 0, Length);
-            ArrayPool<byte>.Shared.Return(buffer);
+            if (buffer.Length > 0)
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
             buffer = newBuffer;
         }
 

@@ -103,6 +103,7 @@ class MemberMeta
             ushort x => $"(ushort){x}",
             byte x => $"(byte){x}",
             sbyte x => $"(sbyte){x}",
+            short x => $"(short){x}",
             _ => ExplicitDefaultValueFromConstructor.ToString()
         };
     }

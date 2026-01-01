@@ -107,8 +107,11 @@ namespace VYaml.Internal
             var chompHint = '\0';
             if (originalValue.Length > 0 && originalValue[^1] == '\n')
             {
-                if (originalValue[^2] == '\n' ||
-                    (originalValue[^2] == '\r' && originalValue[^3] == '\n'))
+                if (originalValue.Length >= 2 && originalValue[^2] == '\n')
+                {
+                    chompHint = '+';
+                }
+                else if (originalValue.Length >= 3 && originalValue[^2] == '\r' && originalValue[^3] == '\n')
                 {
                     chompHint = '+';
                 }
@@ -286,8 +289,6 @@ namespace VYaml.Internal
 
         static bool IsReservedWord(ReadOnlySpan<char> value)
         {
-            var b = new StringBuilder();
-            b.Append('\n');
             switch (value.Length)
             {
                 case 1:
@@ -329,7 +330,16 @@ namespace VYaml.Internal
         {
             if (length > whiteSpaces.Length)
             {
-                whiteSpaces = Enumerable.Repeat(' ', length * 2).ToArray();
+                var newSize = whiteSpaces.Length;
+                while (newSize < length)
+                {
+                    newSize *= 2;
+                }
+                whiteSpaces = new char[newSize];
+                for (var i = 0; i < newSize; i++)
+                {
+                    whiteSpaces[i] = ' ';
+                }
             }
             stringBuilder.Append(whiteSpaces.AsSpan(0, length));
         }

@@ -142,8 +142,16 @@ namespace VYaml.Parser
 
         void ConsumeMoreTokens()
         {
+            const int MaxIterations = 1_000_000; // Safety guard against malformed input
+            var iterations = 0;
+            
             while (true)
             {
+                if (++iterations > MaxIterations)
+                {
+                    throw new YamlTokenizerException(in mark, "Maximum token parsing iterations exceeded. Input may be malformed.");
+                }
+                
                 var needMore = tokens.Count <= 0;
                 if (!needMore)
                 {
@@ -1024,8 +1032,16 @@ namespace VYaml.Parser
         void ConsumeBlockScalarBreaks(ref int blockIndent, ref ExpandBuffer<byte> blockLineBreaks)
         {
             var maxIndent = 0;
+            const int MaxIterations = 100_000;
+            var iterations = 0;
+            
             while (true)
             {
+                if (++iterations > MaxIterations)
+                {
+                    throw new YamlTokenizerException(in mark, "Maximum block scalar iterations exceeded. Input may be malformed.");
+                }
+                
                 while ((blockIndent == 0 || mark.Col < blockIndent) &&
                        currentCode == YamlCodes.Space)
                 {

@@ -33,7 +33,12 @@ namespace VYaml.Internal
         {
             if (length > buffer.Length)
             {
-                SetCapacity(buffer.Length * 2);
+                var newCapacity = buffer.Length * 2;
+                while (newCapacity < length)
+                {
+                    newCapacity *= 2;
+                }
+                SetCapacity(newCapacity);
             }
             return buffer.AsSpan(0, length);
         }
@@ -81,6 +86,11 @@ namespace VYaml.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void SetCapacity(int newCapacity)
         {
+            const int MaxCapacity = 64 * 1024 * 1024; // 64M elements safety limit
+            if (newCapacity > MaxCapacity)
+            {
+                throw new InvalidOperationException($"Buffer capacity {newCapacity} exceeds maximum allowed size of {MaxCapacity}.");
+            }
             if (buffer.Length >= newCapacity) return;
 
             // var newBuffer = ArrayPool<T>.Shared.Rent(newCapacity);
