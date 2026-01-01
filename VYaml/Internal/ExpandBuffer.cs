@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace VYaml.Internal
@@ -8,14 +9,21 @@ namespace VYaml.Internal
     {
         const int MinimumGrow = 4;
         const int GrowFactor = 200;
+        const int MaxCapacity = 64 * 1024 * 1024;
 
         public int Length { get; private set; }
         T[] buffer;
+        bool isPooled;
 
         public ExpandBuffer(int capacity)
         {
-            // buffer = ArrayPool<T>.Shared.Rent(capacity);
-            buffer = new T[capacity];
+            if (capacity > MaxCapacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), 
+                    $"Requested capacity {capacity} exceeds maximum of {MaxCapacity}.");
+            }
+            buffer = ArrayPool<T>.Shared.Rent(capacity);
+            isPooled = true;
             Length = 0;
         }
 
@@ -44,10 +52,7 @@ namespace VYaml.Internal
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Clear()
-        {
-            Length = 0;
-        }
+        public void Clear() => Length = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T Peek() => ref buffer[Length - 1];
@@ -79,25 +84,34 @@ namespace VYaml.Internal
             {
                 Grow();
             }
-
             buffer[Length++] = item;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void SetCapacity(int newCapacity)
         {
-            const int MaxCapacity = 64 * 1024 * 1024; // 64M elements safety limit
             if (newCapacity > MaxCapacity)
             {
-                throw new InvalidOperationException($"Buffer capacity {newCapacity} exceeds maximum allowed size of {MaxCapacity}.");
+                throw new InvalidOperationException(
+                    $"Buffer capacity {newCapacity} exceeds maximum of {MaxCapacity}.");
             }
             if (buffer.Length >= newCapacity) return;
 
-            // var newBuffer = ArrayPool<T>.Shared.Rent(newCapacity);
-            var newBuffer = new T[newCapacity];
+            var newBuffer = ArrayPool<T>.Shared.Rent(newCapacity);
             buffer.AsSpan(0, Length).CopyTo(newBuffer);
-            // ArrayPool<T>.Shared.Return(buffer);
+            ReturnBuffer();
             buffer = newBuffer;
+            isPooled = true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void ReturnBuffer()
+        {
+            if (isPooled && buffer.Length > 0)
+            {
+                ArrayPool<T>.Shared.Return(buffer, clearArray: !typeof(T).IsValueType);
+                isPooled = false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,4 +126,3 @@ namespace VYaml.Internal
         }
     }
 }
-
