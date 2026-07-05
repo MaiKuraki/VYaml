@@ -437,8 +437,7 @@ static class TypeMetaAnalyzer
                 isNullableValueType: isNullableValueType,
                 isValueType: MemberType.IsValueType,
                 defaultValueComparison: GetDefaultValueComparison(MemberType, Name),
-                defaultValueExpression: EmitDefaultValue(),
-                keyNameUtf8Bytes: System.Text.Encoding.UTF8.GetBytes(KeyName));
+                defaultValueExpression: EmitDefaultValue());
         }
 
         string EmitDefaultValue()

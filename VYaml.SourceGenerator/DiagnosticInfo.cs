@@ -8,7 +8,7 @@ namespace VYaml.SourceGenerator;
 // Holding Diagnostic/Location directly in the incremental pipeline would root the
 // Compilation and break caching, so we capture only value-typed data here and
 // reconstruct the Diagnostic at the RegisterSourceOutput stage.
-sealed class DiagnosticInfo : IEquatable<DiagnosticInfo>
+sealed record DiagnosticInfo
 {
     public DiagnosticDescriptor Descriptor { get; }
     public LocationInfo? Location { get; }
@@ -35,30 +35,10 @@ sealed class DiagnosticInfo : IEquatable<DiagnosticInfo>
         }
         return Diagnostic.Create(Descriptor, Location?.ToLocation(), args);
     }
-
-    public bool Equals(DiagnosticInfo? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-
-        return Descriptor.Equals(other.Descriptor) &&
-               Equals(Location, other.Location) &&
-               MessageArgs.Equals(other.MessageArgs);
-    }
-
-    public override bool Equals(object? obj) => obj is DiagnosticInfo other && Equals(other);
-
-    public override int GetHashCode()
-    {
-        var hash = Descriptor.GetHashCode();
-        hash = unchecked(hash * 397) ^ (Location?.GetHashCode() ?? 0);
-        hash = unchecked(hash * 397) ^ MessageArgs.GetHashCode();
-        return hash;
-    }
 }
 
 // Equatable, compilation-independent representation of a source Location.
-sealed class LocationInfo : IEquatable<LocationInfo>
+sealed record LocationInfo
 {
     public string FilePath { get; }
     public TextSpan TextSpan { get; }
@@ -80,25 +60,5 @@ sealed class LocationInfo : IEquatable<LocationInfo>
             return null;
         }
         return new LocationInfo(location.SourceTree.FilePath, location.SourceSpan, location.GetLineSpan().Span);
-    }
-
-    public bool Equals(LocationInfo? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-
-        return FilePath == other.FilePath &&
-               TextSpan.Equals(other.TextSpan) &&
-               LineSpan.Equals(other.LineSpan);
-    }
-
-    public override bool Equals(object? obj) => obj is LocationInfo other && Equals(other);
-
-    public override int GetHashCode()
-    {
-        var hash = FilePath.GetHashCode();
-        hash = unchecked(hash * 397) ^ TextSpan.GetHashCode();
-        hash = unchecked(hash * 397) ^ LineSpan.GetHashCode();
-        return hash;
     }
 }

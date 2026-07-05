@@ -71,7 +71,7 @@ public class VYamlIncrementalSourceGenerator : IIncrementalGenerator
 
 // Value-equatable emit output. Equality lets Roslyn skip RegisterSourceOutput (the AddSource call)
 // for types whose generated output is unchanged.
-sealed class EmitResult : IEquatable<EmitResult>
+sealed record EmitResult
 {
     public string HintName { get; }
     public string? Source { get; }
@@ -82,25 +82,5 @@ sealed class EmitResult : IEquatable<EmitResult>
         HintName = hintName;
         Source = source;
         Diagnostics = diagnostics;
-    }
-
-    public bool Equals(EmitResult? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-
-        return HintName == other.HintName &&
-               Source == other.Source &&
-               Diagnostics.Equals(other.Diagnostics);
-    }
-
-    public override bool Equals(object? obj) => obj is EmitResult other && Equals(other);
-
-    public override int GetHashCode()
-    {
-        var hash = HintName.GetHashCode();
-        hash = unchecked(hash * 397) ^ (Source?.GetHashCode() ?? 0);
-        hash = unchecked(hash * 397) ^ Diagnostics.GetHashCode();
-        return hash;
     }
 }

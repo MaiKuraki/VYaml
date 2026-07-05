@@ -15,7 +15,7 @@ public enum NamingConvention
 // Emitter. This is the incremental cache key: it carries only primitives / strings / EquatableArrays,
 // so an edit that does not change a type's relevant shape produces an equal model, letting Roslyn skip
 // both the emit and the source-output stage downstream.
-sealed class TypeMetaModel : IEquatable<TypeMetaModel>
+sealed record TypeMetaModel
 {
     public string HintName { get; }
     public bool IsValid { get; }
@@ -80,49 +80,9 @@ sealed class TypeMetaModel : IEquatable<TypeMetaModel>
         SetterMemberNames = setterMemberNames;
         Unions = unions;
     }
-
-    public bool Equals(TypeMetaModel? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-
-        return HintName == other.HintName &&
-               IsValid == other.IsValid &&
-               TypeName == other.TypeName &&
-               SanitizedTypeName == other.SanitizedTypeName &&
-               FullTypeName == other.FullTypeName &&
-               Namespace == other.Namespace &&
-               HasNamespace == other.HasNamespace &&
-               IsValueType == other.IsValueType &&
-               IsInterface == other.IsInterface &&
-               HasBaseYamlObject == other.HasBaseYamlObject &&
-               TypeDeclarationKeyword == other.TypeDeclarationKeyword &&
-               IsUnion == other.IsUnion &&
-               NamingConventionByType == other.NamingConventionByType &&
-               HasConstructor == other.HasConstructor &&
-               Members.Equals(other.Members) &&
-               ConstructorParameterNames.Equals(other.ConstructorParameterNames) &&
-               SetterMemberNames.Equals(other.SetterMemberNames) &&
-               Unions.Equals(other.Unions) &&
-               Diagnostics.Equals(other.Diagnostics);
-    }
-
-    public override bool Equals(object? obj) => obj is TypeMetaModel other && Equals(other);
-
-    public override int GetHashCode()
-    {
-        var hash = HintName.GetHashCode();
-        hash = unchecked(hash * 397) ^ FullTypeName.GetHashCode();
-        hash = unchecked(hash * 397) ^ IsUnion.GetHashCode();
-        hash = unchecked(hash * 397) ^ NamingConventionByType.GetHashCode();
-        hash = unchecked(hash * 397) ^ Members.GetHashCode();
-        hash = unchecked(hash * 397) ^ Unions.GetHashCode();
-        hash = unchecked(hash * 397) ^ Diagnostics.GetHashCode();
-        return hash;
-    }
 }
 
-sealed class MemberMetaModel : IEquatable<MemberMetaModel>
+sealed record MemberMetaModel
 {
     public string Name { get; }
     public string KeyName { get; }
@@ -135,8 +95,9 @@ sealed class MemberMetaModel : IEquatable<MemberMetaModel>
     public string DefaultValueComparison { get; }
     public string DefaultValueExpression { get; }
 
-    // Derived purely from KeyName (its UTF8 encoding); excluded from equality/hash.
-    public byte[] KeyNameUtf8Bytes { get; }
+    // Computed (no backing field), so it is derived on demand and excluded from record equality,
+    // which is correct because it is a pure function of KeyName.
+    public byte[] KeyNameUtf8Bytes => System.Text.Encoding.UTF8.GetBytes(KeyName);
 
     public MemberMetaModel(
         string name,
@@ -148,8 +109,7 @@ sealed class MemberMetaModel : IEquatable<MemberMetaModel>
         bool isNullableValueType,
         bool isValueType,
         string defaultValueComparison,
-        string defaultValueExpression,
-        byte[] keyNameUtf8Bytes)
+        string defaultValueExpression)
     {
         Name = name;
         KeyName = keyName;
@@ -161,41 +121,10 @@ sealed class MemberMetaModel : IEquatable<MemberMetaModel>
         IsValueType = isValueType;
         DefaultValueComparison = defaultValueComparison;
         DefaultValueExpression = defaultValueExpression;
-        KeyNameUtf8Bytes = keyNameUtf8Bytes;
-    }
-
-    public bool Equals(MemberMetaModel? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-
-        return Name == other.Name &&
-               KeyName == other.KeyName &&
-               FullTypeName == other.FullTypeName &&
-               HasKeyNameAlias == other.HasKeyNameAlias &&
-               NamingConventionByType == other.NamingConventionByType &&
-               IsReferenceType == other.IsReferenceType &&
-               IsNullableValueType == other.IsNullableValueType &&
-               IsValueType == other.IsValueType &&
-               DefaultValueComparison == other.DefaultValueComparison &&
-               DefaultValueExpression == other.DefaultValueExpression;
-    }
-
-    public override bool Equals(object? obj) => obj is MemberMetaModel other && Equals(other);
-
-    public override int GetHashCode()
-    {
-        var hash = Name.GetHashCode();
-        hash = unchecked(hash * 397) ^ KeyName.GetHashCode();
-        hash = unchecked(hash * 397) ^ FullTypeName.GetHashCode();
-        hash = unchecked(hash * 397) ^ HasKeyNameAlias.GetHashCode();
-        hash = unchecked(hash * 397) ^ NamingConventionByType.GetHashCode();
-        hash = unchecked(hash * 397) ^ DefaultValueExpression.GetHashCode();
-        return hash;
     }
 }
 
-sealed class UnionMetaModel : IEquatable<UnionMetaModel>
+sealed record UnionMetaModel
 {
     public string SubTypeTag { get; }
     public string FullTypeName { get; }
@@ -205,15 +134,4 @@ sealed class UnionMetaModel : IEquatable<UnionMetaModel>
         SubTypeTag = subTypeTag;
         FullTypeName = fullTypeName;
     }
-
-    public bool Equals(UnionMetaModel? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return SubTypeTag == other.SubTypeTag && FullTypeName == other.FullTypeName;
-    }
-
-    public override bool Equals(object? obj) => obj is UnionMetaModel other && Equals(other);
-
-    public override int GetHashCode() => unchecked(SubTypeTag.GetHashCode() * 397) ^ FullTypeName.GetHashCode();
 }
